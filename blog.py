@@ -12,3 +12,8 @@ def hello():
 @app.route('/index')
 def index():
     return "<h1>Hello, FlaskApp User =)!</h1>"
+
+
+@app.route('/about')
+def about():
+    return render_template("about.html")
