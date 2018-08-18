@@ -4,7 +4,8 @@ from flask import (
     flash,
     redirect,
     url_for,
-    request
+    request,
+    session
 )
 from flask_mysqldb import MySQL
 from wtforms import (
@@ -38,26 +39,31 @@ mysql = MySQL(app)
 objects = articles()
 
 
+# Home page
 @app.route('/')
 def home():
     return render_template("home.html")
 
 
+# About page
 @app.route('/about')
 def about():
     return render_template("about.html")
 
 
+# Articles List
 @app.route('/articles')
 def articles():
     return render_template("articles.html", articles=objects)
 
 
+# Single Article
 @app.route('/article/<string:id>')
 def article(id):
     return render_template("article.html", id=id)
 
 
+# Register Form Class
 class RegisterForm(Form):
     name = StringField(u'Name', validators=[
         validators.input_required(),
@@ -76,6 +82,7 @@ class RegisterForm(Form):
     confirm_password = PasswordField(u'Confirm password')
 
 
+# User register
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegisterForm(request.form)
@@ -106,6 +113,7 @@ def register():
     return render_template("registration/register.html", form=form)
 
 
+# User login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -127,11 +135,32 @@ def login():
 
             # Compare passwords
             if sha256_crypt.verify(password_candidate, password):
-                app.logger.info('PASSWORD MATCHED')
+                # Passed
+                session['logged_in'] = True
+                session['username'] = username
+
+                flash('You are now logged in', 'success')
+                return redirect(url_for('dashboard'))
             else:
-                app.logger.info('PASSWORD NOT MATCHED')
+                error = 'Invalid login'
+                return render_template('registration/login.html', error=error)
+
         else:
-            app.logger.info('NO USER')
+            error = 'Username not found'
+            return render_template('registration/login.html', error=error)
 
     return render_template("registration/login.html")
 
+
+# User logout
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You are now logged out', 'success')
+    return redirect(url_for('login'))
+
+
+# Dashboard
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
