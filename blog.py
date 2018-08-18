@@ -63,14 +63,15 @@ class RegisterForm(Form):
         validators.input_required(),
         validators.Length(min=1, max=50)
     ])
-    email = StringField(u'Email', validators=[validators.Length(min=6,
-                                                                max=50)])
-    username = StringField(u'Username', validators=[validators.Length(min=3,
-                                                                      max=25)])
+    email = StringField(u'Email', validators=[
+        validators.Length(min=6, max=50)
+    ])
+    username = StringField(u'Username', validators=[
+        validators.Length(min=3, max=25)
+    ])
     password = PasswordField(u'Password', validators=[
         validators.DataRequired(),
-        validators.EqualTo('confirm_password', message='Passwords do not'
-                                                       ' match')
+        validators.EqualTo('confirm_password', message='Passwords don\'t match')
     ])
     confirm_password = PasswordField(u'Confirm password')
 
@@ -103,3 +104,34 @@ def register():
         form = RegisterForm()
         return redirect(url_for('home'))
     return render_template("registration/register.html", form=form)
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        # Get Form Fields
+        username = request.form['username']
+        password_candidate = request.form['password']
+
+        # Create cursor
+        cur = mysql.connection.cursor()
+
+        # Get user by username
+        result = cur.execute("SELECT * FROM users WHERE username = %s",
+                             [username])
+
+        if result > 0:
+            # Get stored hash
+            data = cur.fetchone()
+            password = data['password']
+
+            # Compare passwords
+            if sha256_crypt.verify(password_candidate, password):
+                app.logger.info('PASSWORD MATCHED')
+            else:
+                app.logger.info('PASSWORD NOT MATCHED')
+        else:
+            app.logger.info('NO USER')
+
+    return render_template("registration/login.html")
+
